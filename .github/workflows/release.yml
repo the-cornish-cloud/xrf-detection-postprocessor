@@ -9,20 +9,12 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    runs-on: windows-latest
-    
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.semvers.outputs.v_minor }}
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-pc-windows-msvc
-          
-      
-      - name: Build Release
-        run: cargo build --release
       
       - name: Get Previous tag
         id: previoustag
@@ -35,12 +27,26 @@ jobs:
         id: semvers
         uses: "WyriHaximus/github-action-next-semvers@v1"
         with:
-          version: ${{ steps.previoustag.outputs.tag  }}
+          version: ${{ steps.previoustag.outputs.tag }}
+
+  build:
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      
+      - name: Build Release
+        run: cargo build --release
       
       - name: Create ZIP
         run: |
           cd target/release
-          $version = ${{ steps.semvers.outputs.v_minor }}
+          $version = "${{ needs.version.outputs.new_version }}"
           $exeName = "xrf-detection-postprocessor-${version}.exe"
           $zipName = "xrf-detection-postprocessor-${version}.zip"
           Copy-Item "xrf-detection-postprocessor.exe" -Destination $exeName
@@ -51,11 +57,11 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2.0.9
         with:
-          tag_name: ${{ steps.semvers.outputs.v_minor }}
-          name: Release ${{ steps.semvers.outputs.v_minor }}
+          tag_name: ${{ needs.version.outputs.new_version }}
+          name: Release ${{ needs.version.outputs.new_version }}
           files: |
-            target/release/xrf-detection-postprocessor-${{ steps.semvers.outputs.v_minor }}.exe
-            target/release/xrf-detection-postprocessor-${{ steps.semvers.outputs.v_minor }}.zip
+            target/release/xrf-detection-postprocessor-${{ needs.version.outputs.new_version }}.exe
+            target/release/xrf-detection-postprocessor-${{ needs.version.outputs.new_version }}.zip
           draft: false
           prerelease: false
         env:
