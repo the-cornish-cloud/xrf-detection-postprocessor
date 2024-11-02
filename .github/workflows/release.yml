@@ -19,6 +19,17 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
+          
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       
       - name: Build Release
         run: cargo build --release
@@ -42,7 +53,12 @@ jobs:
             echo "version=1.0" >> $env:GITHUB_OUTPUT
           } else {
             $previousVersion = "${{ steps.previoustag.outputs.tag }}" -replace 'v', ''
-            $newVersion = [double]$previousVersion + 0.1
+            $major, $minor = $previousVersion.Split('.')
+            $newMinor = [int]$minor + 1
+            if ($major -eq "1" -and $minor -eq "9") {
+              $newMinor = "10"
+            }
+            $newVersion = "1.$newMinor"
             echo "version=$newVersion" >> $env:GITHUB_OUTPUT
           }
         shell: pwsh
