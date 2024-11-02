@@ -34,14 +34,14 @@ jobs:
       - name: Calculate new version
         id: version
         run: |
-          if [ "${{ steps.previoustag.outcome }}" = "failure" ]; then
-            echo "version=1.0" >> $GITHUB_OUTPUT
-          else
-            previous_version=$(echo "${{ steps.previoustag.outputs.tag }}" | sed 's/v//')
-            new_version=$(echo "$previous_version + 0.1" | bc)
-            echo "version=$new_version" >> $GITHUB_OUTPUT
-          fi
-        shell: bash
+          if ("${{ steps.previoustag.outcome }}" -eq "failure") {
+            echo "version=1.0" >> $env:GITHUB_OUTPUT
+          } else {
+            $previousVersion = "${{ steps.previoustag.outputs.tag }}" -replace 'v', ''
+            $newVersion = [double]$previousVersion + 0.1
+            echo "version=$newVersion" >> $env:GITHUB_OUTPUT
+          }
+        shell: pwsh
         
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -54,4 +54,4 @@ jobs:
           draft: false
           prerelease: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
