@@ -23,13 +23,6 @@ jobs:
       
       - name: Build Release
         run: cargo build --release
-        
-      - name: Create ZIP
-        run: |
-          cd target/release
-          7z a xrf-detection-postprocessor.zip xrf-detection-postprocessor.exe
-          cd ../..
-        shell: pwsh
       
       - name: Get Previous tag
         id: previoustag
@@ -51,14 +44,25 @@ jobs:
           }
         shell: pwsh
         
+      - name: Create ZIP
+        run: |
+          cd target/release
+          $version = "${{ steps.version.outputs.version }}"
+          $exeName = "xrf-detection-postprocessor-v${version}.exe"
+          $zipName = "xrf-detection-postprocessor-v${version}.zip"
+          Copy-Item "xrf-detection-postprocessor.exe" -Destination $exeName
+          7z a $zipName $exeName
+          cd ../..
+        shell: pwsh
+        
       - name: Create Release
         uses: softprops/action-gh-release@v2.0.9
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: Release v${{ steps.version.outputs.version }}
           files: |
-            target/release/xrf-detection-postprocessor.exe
-            target/release/xrf-detection-postprocessor.zip
+            target/release/xrf-detection-postprocessor-v${{ steps.version.outputs.version }}.exe
+            target/release/xrf-detection-postprocessor-v${{ steps.version.outputs.version }}.zip
           draft: false
           prerelease: false
         env:
