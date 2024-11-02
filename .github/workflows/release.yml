@@ -39,10 +39,11 @@ jobs:
       - name: Calculate new version
         id: version
         run: |
-          if ("${{ steps.previoustag.outcome }}" -eq "failure") {
+          $previousTag = "${{ steps.previoustag.outputs.tag }}"
+          if ([string]::IsNullOrEmpty($previousTag)) {
             echo "version=1.0" >> $env:GITHUB_OUTPUT
           } else {
-            $previousVersion = "${{ steps.previoustag.outputs.tag }}" -replace 'v', ''
+            $previousVersion = $previousTag -replace 'v', ''
             $major, $minor = $previousVersion.Split('.')
             $newMinor = [int]$minor + 1
             $newVersion = "1.$newMinor"
