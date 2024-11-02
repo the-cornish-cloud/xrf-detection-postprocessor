@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      
+      - name: Build Release
+        run: cargo build --release
+        
+      - name: Create ZIP file
+        run: |
+          cd target/release
+          7z a qan_processor.zip qan_processor.exe
+          cd ../..
+      
+      - name: Get Previous tag
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        continue-on-error: true
+        
+      - name: Calculate new version
+        id: version
+        run: |
+          if [ "${{ steps.previoustag.outcome }}" = "failure" ]; then
+            echo "version=1.0" >> $GITHUB_OUTPUT
+          else
+            previous_version=$(echo "${{ steps.previoustag.outputs.tag }}" | sed 's/v//')
+            new_version=$(echo "$previous_version + 0.1" | bc)
+            echo "version=$new_version" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+        
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          files: |
+            target/release/qan_processor.exe
+            target/release/qan_processor.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

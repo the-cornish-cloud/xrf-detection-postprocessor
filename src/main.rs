@@ -3,30 +3,19 @@ use std::path::Path;
 use walkdir::WalkDir;
 use std::io::Write;
 
+
 fn main() {
     // Get the current directory where the executable is running
     let current_dir = std::env::current_dir().expect("Failed to get current directory");
     
-    // First process files in the same directory as the binary
-    for entry in fs::read_dir(&current_dir).expect("Failed to read directory") {
-        if let Ok(entry) = entry {
-            let path = entry.path();
-            if let Some(extension) = path.extension() {
-                if extension == "qan" || extension == "txt" {
-                    process_file(&path);
-                }
-            }
-        }
-    }
-    
-    // Then process files in subdirectories
-    for entry in WalkDir::new(&current_dir)
-        .min_depth(1) // Skip the root directory since we already processed it
+    // Walk through all files in current directory and subdirectories
+    for entry in WalkDir::new(current_dir)
         .into_iter()
         .filter_map(|e| e.ok()) {
             
         let path = entry.path();
         
+        // Check if the file has .qan or .txt extension
         if let Some(extension) = path.extension() {
             if extension == "qan" || extension == "txt" {
                 process_file(path);
