@@ -45,9 +45,6 @@ jobs:
             $previousVersion = "${{ steps.previoustag.outputs.tag }}" -replace 'v', ''
             $major, $minor = $previousVersion.Split('.')
             $newMinor = [int]$minor + 1
-            if ($major -eq "1" -and $minor -eq "9") {
-              $newMinor = "10"
-            }
             $newVersion = "1.$newMinor"
             echo "version=$newVersion" >> $env:GITHUB_OUTPUT
           }
