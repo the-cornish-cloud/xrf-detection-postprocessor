@@ -42,8 +42,12 @@ fn process_file(path: &Path) {
 }
 
 fn process_and_write_file(content: &str, output_path: &Path) -> Result<(), String> {
+    // Detect original line ending style (Windows CRLF or Unix LF)
+    let line_ending = if content.contains("\r\n") { "\r\n" } else { "\n" };
+    
     let mut output_lines = Vec::new();
-    let lines: Vec<&str> = content.lines().collect();
+    // Split by both CRLF and LF to handle both cases
+    let lines: Vec<&str> = content.split(&['\r', '\n'][..]).filter(|s| !s.is_empty()).collect();
     
     for line in lines {
         if line.is_empty() {
@@ -87,13 +91,24 @@ fn process_and_write_file(content: &str, output_path: &Path) -> Result<(), Strin
         output_lines.push(line.to_string());
     }
 
-    // Write to file
+    // Write to file with original line endings
     let mut file = fs::File::create(output_path)
         .map_err(|e| format!("Failed to create output file: {}", e))?;
     
-    for line in output_lines {
-        writeln!(file, "{}", line)
-            .map_err(|e| format!("Failed to write to file: {}", e))?;
+    for (i, line) in output_lines.iter().enumerate() {
+        if i < output_lines.len() - 1 {
+            write!(file, "{}{}", line, line_ending)
+                .map_err(|e| format!("Failed to write to file: {}", e))?;
+        } else {
+            // Don't add line ending after the last line if original didn't have one
+            if content.ends_with(line_ending) {
+                write!(file, "{}{}", line, line_ending)
+                    .map_err(|e| format!("Failed to write to file: {}", e))?;
+            } else {
+                write!(file, "{}", line)
+                    .map_err(|e| format!("Failed to write to file: {}", e))?;
+            }
+        }
     }
 
     Ok(())
